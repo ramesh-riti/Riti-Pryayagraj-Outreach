@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riti Eye Care: Outreach Department</title>
+    <style>
+        :root {
+            --primary: #0f172a; --accent: #6366f1; --gold: #fbbf24;
+            --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; font-size: 11px; color: var(--text); }
+        
+        header { 
+            background: var(--primary); color: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        
+        .coord-table { width: 100%; margin-top: 15px; border-collapse: collapse; font-size: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; }
+        .coord-table th { background: #1e293b; color: var(--gold); text-align: left; padding: 8px; text-transform: uppercase; border-bottom: 2px solid #334155; }
+        .coord-table td { padding: 8px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        .rev-val { color: #22c55e; font-weight: bold; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .day-cell { 
+            background: white; border: 1px solid var(--border); border-radius: 10px; min-height: 150px; padding: 10px;
+            display: flex; flex-direction: column; cursor: pointer; transition: 0.2s;
+        }
+        .day-cell:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .day-num { font-weight: 900; font-size: 13px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 5px; display: flex; justify-content: space-between;}
+
+        .metric-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: auto; font-size: 9px; }
+        .pill { padding: 2px 4px; border-radius: 4px; background: #f1f5f9; font-weight: bold; text-align: center; color: #475569;}
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.8); z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 500px; margin: 30px auto; padding: 25px; border-radius: 15px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;}
+        .field label { display: block; font-weight: 700; font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+        .field input, .field select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 11px;}
+
+        @media print { .no-print { display: none !important; } .coord-table td { color: black; border-color: #ccc; } .coord-table th { background: #eee; color: black; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <div>
+            <h1 style="margin:0; font-size: 18px;">Riti Eye Care Hospital-Prayagraj: Outreach Department</h1>
+            <p style="margin:0; opacity: 0.7; font-weight: 600;">Monthly Performance Report: <span id="displayMonth">September 2026</span></p>
+        </div>
+        <div class="no-print">
+            <select id="monthPicker" onchange="aiAutoFill()" style="padding: 8px; border-radius: 6px; font-weight: 700;">
+                <option value="3">April 2026</option><option value="4">May 2026</option><option value="5">June 2026</option>
+                <option value="6">July 2026</option><option value="7">August 2026</option><option value="8" selected>September 2026</option>
+                <option value="9">October 2026</option><option value="10">November 2026</option><option value="11">December 2026</option>
+                <option value="0">January 2027</option><option value="1">February 2027</option><option value="2">March 2027</option>
+            </select>
+            <button onclick="window.print()" style="padding: 8px 12px; font-weight: 800; cursor: pointer; background: var(--accent); color: white; border: none; border-radius: 6px;">Export PDF</button>
+        </div>
+    </div>
+
+    <table class="coord-table">
+        <thead>
+            <tr>
+                <th>Coordinator</th>
+                <th>Camp Count</th>
+                <th>Ayushman (Sx)</th>
+                <th>Ayu. Revenue</th>
+                <th>Paid (Sx)</th>
+                <th>Paid Revenue</th>
+            </tr>
+        </thead>
+        <tbody id="coordBody"></tbody>
+    </table>
+</header>
+
+<div class="cal-grid" id="mainGrid"></div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalDate" style="margin-top:0; border-bottom: 2px solid var(--accent); padding-bottom: 10px; font-size: 16px;">Update Camp Details</h2>
+        <div class="form-grid">
+            <div class="field"><label>Tahsil</label><select id="mTahsil"><option>Handia</option><option>Phulpur</option><option>Meja</option><option>Koraon</option><option>Soraon</option><option>Karchana</option></select></div>
+            <div class="field"><label>Village</label><input type="text" id="mVillage"></div>
+            <div class="field"><label>Partner</label><input type="text" id="mPartner"></div>
+            <div class="field"><label>Coordinator</label><select id="mCoord"><option>Chandan</option><option>Jitendra</option><option>Sandeep</option><option>New Coordinator</option></select></div>
+            <div class="field"><label>Exp. OPD</label><input type="number" id="mOPD"></div>
+            <div class="field"><label>Optical (₹)</label><input type="number" id="mOpt"></div>
+            <div class="field"><label>Ayushman Sx</label><input type="number" id="mAyush"></div>
+            <div class="field"><label>Paid Sx</label><input type="number" id="mPaid"></div>
+        </div>
+        <button id="saveBtn" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:800; cursor:pointer;" onclick="saveDay()">Update Dashboard & Sync</button>
+        <button style="width:100%; padding:10px; background:none; border:none; color:#64748b; cursor:pointer;" onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
+<script>
+    // --- PASTE YOUR GOOGLE WEB APP URL HERE ---
+    const SCRIPT_URL = ""; 
+    
+    const AYUSH_TICKET = 9095;
+    const PAID_TICKET = 7500;
+    const VILLAGES = ["Handia Bazaar", "Saidabad", "Sahson", "Koraon Town", "Manda", "Lalgopalganj", "Mauaima", "Sirsa Market", "Phulpur Town", "Meja Road"];
+    const COORDS = ["Chandan", "Jitendra", "Sandeep", "New Coordinator"];
+
+    let daysData = [];
+    let currentIdx = null;
+
+    function updateCoordTable() {
+        const html = COORDS.map(c => {
+            const cData = daysData.filter(d => d.coord === c);
+            const ayushSx = cData.reduce((sum, d) => sum + (parseInt(d.ayush) || 0), 0);
+            const paidSx = cData.reduce((sum, d) => sum + (parseInt(d.paid) || 0), 0);
+            return `
+                <tr>
+                    <td><strong>${c}</strong></td>
+                    <td>${cData.length}</td>
+                    <td>${ayushSx}</td>
+                    <td class="rev-val">₹${(ayushSx * AYUSH_TICKET).toLocaleString('en-IN')}</td>
+                    <td>${paidSx}</td>
+                    <td class="rev-val">₹${(paidSx * PAID_TICKET).toLocaleString('en-IN')}</td>
+                </tr>
+            `;
+        }).join('');
+        document.getElementById('coordBody').innerHTML = html;
+    }
+
+    async function aiAutoFill() {
+        const picker = document.getElementById('monthPicker');
+        document.getElementById('displayMonth').innerText = picker.options[picker.selectedIndex].text;
+        
+        const m = parseInt(picker.value);
+        const year = (m >= 0 && m <= 2) ? 2027 : 2026;
+        const totalDays = new Date(year, m + 1, 0).getDate();
+        const startDay = new Date(year, m, 1).getDay();
+        
+        daysData = [];
+        for(let i=1; i<=totalDays; i++) {
+            daysData.push({
+                date: i, 
+                dayName: new Date(year, m, i).toLocaleDateString('en-US', {weekday: 'short'}),
+                tahsil: "Handia", 
+                village: VILLAGES[i % VILLAGES.length], 
+                partner: "Local Partner",
+                paid: 0, ayush: 0, opd: 0, opt: 0,
+                coord: COORDS[i % COORDS.length], 
+                monthId: `${year}-${m}`
+            });
+        }
+        render(startDay);
+        updateCoordTable();
+        if(SCRIPT_URL) await loadRemoteData(); 
+    }
+
+    function render(offset) {
+        const grid = document.getElementById('mainGrid');
+        grid.innerHTML = "";
+        for(let x=0; x<offset; x++) grid.innerHTML += `<div style="border:none;"></div>`;
+        
+        daysData.forEach((d, i) => {
+            grid.innerHTML += `
+                <div class="day-cell" onclick="openModal(${i})">
+                    <div class="day-num"><span>${d.date}</span> <span style="font-weight:normal; font-size:9px; color:#94a3b8;">${d.dayName}</span></div>
+                    <div style="font-weight:800; font-size:10px; min-height:24px;">${d.village}</div>
+                    <div style="font-size:9px; color:#6366f1; font-weight:bold; margin-bottom:8px;">${d.coord}</div>
+                    <div class="metric-row">
+                        <span class="pill">OPD: ${d.opd}</span>
+                        <span class="pill">Opt: ${d.opt}</span>
+                    </div>
+                    <div class="metric-row" style="margin-top:4px;">
+                        <span class="pill" style="background:#e0e7ff; color:#4338ca;">Ayu: ${d.ayush}</span>
+                        <span class="pill" style="background:#fef3c7; color:#92400e;">Paid: ${d.paid}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function openModal(i) {
+        currentIdx = i;
+        const d = daysData[i];
+        document.getElementById('modalDate').innerText = `Update: Day ${d.date} - ${d.dayName}`;
+        document.getElementById('mTahsil').value = d.tahsil;
+        document.getElementById('mVillage').value = d.village;
+        document.getElementById('mPartner').value = d.partner;
+        document.getElementById('mPaid').value = d.paid;
+        document.getElementById('mAyush').value = d.ayush;
+        document.getElementById('mOPD').value = d.opd;
+        document.getElementById('mOpt').value = d.opt;
+        document.getElementById('mCoord').value = d.coord;
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    async function saveDay() {
+        const d = daysData[currentIdx];
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "Syncing...";
+        
+        // Map form values back to data object
+        d.tahsil = document.getElementById('mTahsil').value;
+        d.village = document.getElementById('mVillage').value;
+        d.partner = document.getElementById('mPartner').value;
+        d.paid = document.getElementById('mPaid').value;
+        d.ayush = document.getElementById('mAyush').value;
+        d.opd = document.getElementById('mOPD').value;
+        d.opt = document.getElementById('mOpt').value;
+        d.coord = document.getElementById('mCoord').value;
+
+        const payload = {
+            id: `${d.monthId}-${d.date}`,
+            tahsil: d.tahsil, village: d.village, partner: d.partner,
+            paid: d.paid, ayush: d.ayush, opd: d.opd, opt: d.opt, coord: d.coord
+        };
+
+        render(new Date(2026, parseInt(document.getElementById('monthPicker').value), 1).getDay());
+        updateCoordTable();
+
+        if(SCRIPT_URL) {
+            try {
+                await fetch(SCRIPT_URL, {method: 'POST', mode: 'no-cors', body: JSON.stringify(payload)});
+            } catch(e) { console.log("Sync Error"); }
+        }
+        
+        btn.innerText = "Update Dashboard & Sync";
+        closeModal();
+    }
+
+    async function loadRemoteData() {
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const sheetData = await res.json();
+            sheetData.slice(1).forEach(row => {
+                const dayMatch = daysData.find(d => `${d.monthId}-${d.date}` === row[0]);
+                if (dayMatch) {
+                    dayMatch.tahsil = row[1]; dayMatch.village = row[2];
+                    dayMatch.partner = row[3]; dayMatch.paid = row[5]; 
+                    dayMatch.ayush = row[6]; dayMatch.opd = row[7];
+                    dayMatch.opt = row[9]; dayMatch.coord = row[10];
+                }
+            });
+            render(new Date(2026, parseInt(document.getElementById('monthPicker').value), 1).getDay());
+            updateCoordTable();
+        } catch(e) {}
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+    aiAutoFill();
+</script>
+</body>
+</html>
